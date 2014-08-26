@@ -1,0 +1,28 @@
+{
+  "name": "nodemailer-mailgunapi-transport",
+  "version": "0.0.0",
+  "description": "Mailgun api transport module for Nodemailer",
+  "main": "index.js",
+  "scripts": {
+    "test": "NODE_ENV=test ./node_modules/.bin/mocha"
+  },
+  "author": "avbel <belchikovs@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "debug": "^1.0.4",
+    "superagent": "^0.18.2"
+  },
+  "devDependencies": {
+    "mocha": "^1.21.4",
+    "nock": "^0.45.0",
+    "should": "^4.0.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/avbel/nodemailer-mailgunapi-transport.git"
+  },
+  "keywords": [
+    "mailgun",
+    "nodemailer"
+  ]
+}
