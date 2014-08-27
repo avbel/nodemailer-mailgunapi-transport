@@ -33,7 +33,7 @@ MailgunTransport.prototype.send = function(mail, callback) {
   }
 
   var req = request.post(this.baseUrl + "/messages.mime").auth("api", this.options.apiKey);
-  req.attach("message", mail.message.createReadStream(), "message.eml");
+  req.attach("message", mail.message.createReadStream(), {filename: "message.eml"});
   var to = mail.message.getEnvelope().to;
   if(Array.isArray(to)){
     to = to.join(",");
@@ -63,9 +63,11 @@ MailgunTransport.prototype.registerEmailPattern = function(pattern, callbackUrl,
   if(!pattern) return callback(Error("'pattern' is required"));
   if(!callbackUrl) callback(Error("'callbackUrl' is required"));
   if(!description) callback(Error("'description' is required"));
-  var req = request.get(this.baseUrl + "/routes").auth("api", this.options.apiKey).query({limit: 1000});
-  req.end(function(err, res){
-    if(err) return callback(err);
+  var options = this.options;
+  var baseUrl = this.baseUrl;
+  var req = request.get(baseUrl + "/routes").auth("api", options.apiKey).query({limit: 1000});
+  req.end(function(res){
+    if(!res.ok) return callback(new Error(res.text || "Status code " + res.statusCode));
     var routes = res.body.items;
     var ptrn = "match_recipient(\"" + pattern2regexp(pattern) + "\")";
     var destination = "forward(\"" + callbackUrl + "\")";
@@ -74,10 +76,10 @@ MailgunTransport.prototype.registerEmailPattern = function(pattern, callbackUrl,
     });
     if(list.length == 0){
       debug("Registering new route %s -> %s on the Mailgun server", ptrn, destination);
-      var req = request.post(this.baseUrl + "/routes").auth("api", this.options.apiKey);
+      var req = request.post(baseUrl + "/routes").auth("api", options.apiKey);
       req.send({expression: ptrn, action: [destination, "stop()"], description: description});
-      req.end(function(err, res){
-        if(err) return callback(err);
+      req.end(function(res){
+        if(!res.ok) return callback(new Error(res.text || "Status code " + res.statusCode));
         callback(null, res.body.route.id);
       });
     }
@@ -91,13 +93,13 @@ MailgunTransport.prototype.registerEmailPattern = function(pattern, callbackUrl,
 
 MailgunTransport.prototype.parseMessage = function(message){
   return {
-    externalId: message["Message-Id"].replace("<", "").replace(">", "").trim(),
+    id: message["Message-Id"].replace(/[<>\s]/g, "").trim(),
     from: message.sender,
     to: message.recipient,
     subject: message.subject,
-    htmlBody: message["stripped-html"],
-    textBody: message["stripped-text"],
-    messageHeaders: JSON.parse(message["message-headers"] || "[]"),
+    html: message["stripped-html"],
+    text: message["stripped-text"],
+    headers: JSON.parse(message["message-headers"] || "[]"),
     userAgent: message["User-Agent"],
     references: message["References"],
     variables: JSON.parse(message["X-Mailgun-Variables"] || "{}")
@@ -106,7 +108,7 @@ MailgunTransport.prototype.parseMessage = function(message){
 
 MailgunTransport.prototype.verifySignature = function(token, timestamp, signature){
   if(!token || !timestamp || !signature) return false;
-  return signature == crypto.createHmac("sha256", this.apiKey).update(timestamp + token).digest("hex");
+  return signature === crypto.createHmac("sha256", this.options.apiKey).update(timestamp + token).digest("hex");
 }
 
 
