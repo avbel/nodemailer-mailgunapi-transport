@@ -1,6 +1,5 @@
 var request = require("superagent");
 var crypto = require("crypto");
-var debug = require("debug")("MailgunTransport");
 var EventEmitter = require("events").EventEmitter;
 var utillib = require("util");
 var packageData = require("./package.json");
@@ -43,13 +42,10 @@ MailgunTransport.prototype.send = function(mail, callback) {
   req.end(function(res){
     if(res.ok){
       var id = ((res.body || {}).id || mail.message.getHeader("Message-Id") || "").replace(/[<>\s]/g, "");
-      debug("Sent email message with id %s", id);
       callback(null, {messageId: id});
     }
     else{
-      debug("Error on sending email");
       var err = res.text || "Status code " + res.statusCode;
-      debug(err);
       callback(err);
     }
   });
@@ -75,7 +71,6 @@ MailgunTransport.prototype.registerEmailPattern = function(pattern, callbackUrl,
       return r.expression == ptrn && (r.actions || [])[0] == destination;
     });
     if(list.length == 0){
-      debug("Registering new route %s -> %s on the Mailgun server", ptrn, destination);
       var req = request.post(baseUrl + "/routes").auth("api", options.apiKey);
       req.send({expression: ptrn, action: [destination, "stop()"], description: description});
       req.end(function(res){
@@ -84,7 +79,6 @@ MailgunTransport.prototype.registerEmailPattern = function(pattern, callbackUrl,
       });
     }
     else{
-      debug("Using existing route %s -> %s on the Mailgun server", ptrn, destination);
       callback(null, list[0].id);
     }
   });

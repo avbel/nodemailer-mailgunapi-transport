@@ -3,7 +3,7 @@
 [![Build](https://travis-ci.org/bandwidthcom/nodemailer-mailgunapi-transport.png)](https://travis-ci.org/bandwidthcom/nodemailer-mailgunapi-transport)
 
 
-Mailgun api transport module for Nodemailer
+Mailgun api transport module for Nodemailer 1.0+
 
 ## Install
 
