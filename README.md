@@ -21,7 +21,7 @@ var transporter = nodemailer.createTransport(mailgunApiTransport({apiKey: "MAILG
 
 ## Options
  * `apiKey` is api key of Mailgun (required)
- * `domain` is using domain on Mailgun
+ * `domain` is specific domain of Mailgun
 
 ## Extra
 
