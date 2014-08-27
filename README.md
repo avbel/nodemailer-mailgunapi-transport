@@ -25,7 +25,7 @@ var transporter = nodemailer.createTransport(mailgunApiTransport({apiKey: "MAILG
 
 ## Extra
 
-Also this mailgun api transport contains some usefull functions to register routes to forward email messages from addresses like "reply-{ID}@your-domain.com" to your urls (you can pass extracted ID as url param '\1', i.e. like https://my-domain/emailCallback/\1).
+Also this mailgun api transport contains some usefull functions to register routes to forward email messages from addresses like "reply-{ID}@your-domain.com" to your urls (you can pass extracted ID as url param '\1', i.e. like https://my-domain/emailCallback/\1). Read [here](http://documentation.mailgun.com/user_manual.html#routes) more about mailgun routes.
 
 ```
 var transport = mailgunApiTransport({apiKey: "MAILGUN_API_KEY"});
