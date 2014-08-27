@@ -21,38 +21,37 @@ MailgunTransport.prototype.send = function(mail, callback) {
   var options = this.options;
   var id;
   if(this.options.domain){
-    id = (mail.message.getHeader("Message-Id") || "").replace(/[<>\s]/g, "");
-    id = id.substr(0, id.indexOf("@") + 1) +  this.options.domain;
+    var id = (mail.message.getHeader("Message-Id") || "").replace(/[<>\s]/g, "");
+    var index = id.indexOf("@");
+    if(index >= 0){
+      id = id.substr(0, index + 1) +  this.options.domain;
+    }
+    else{
+      id += "@" + this.options.domain;
+    }
     mail.message.setHeader("Message-Id", "<" + id + ">");
   }
 
   var req = request.post(this.baseUrl + "/messages.mime").auth("api", this.options.apiKey);
-  var part = req.part().name("message").type("eml");
-  debug("Preparing EML");
-  var stream = mail.message.createReadStream();
-  stream.on("error", function(err){
-    debug("Error on preparing EML");
-    debug(err);
-    callback(err);
-  });
-  stream.on("data", function(buf){
-    part.write(buf);
-  });
-  stream.on("end", function(){
-    debug("EML is ready. Sending now.")
-    req.field("to", mail.message.getEnvelope().to.join(","));
-    req.field("o:testmode", options.testMode?"yes":"no");
-    req.end(function(err){
-      if(err){
-        debug("Error on sending email");
-        debug(err);
-        callback(err);
-      }
-      else{
-        debug("Sent email message with id %s", id);
-        callback(null, {messageId: id});
-      }
-    });
+  req.attach("message", mail.message.createReadStream(), "message.eml");
+  var to = mail.message.getEnvelope().to;
+  if(Array.isArray(to)){
+    to = to.join(",");
+  }
+  req.field("to", to);
+  req.field("o:testmode", options.testMode?"yes":"no");
+  req.end(function(res){
+    if(res.ok){
+      var id = ((res.body || {}).id || mail.message.getHeader("Message-Id") || "").replace(/[<>\s]/g, "");
+      debug("Sent email message with id %s", id);
+      callback(null, {messageId: id});
+    }
+    else{
+      debug("Error on sending email");
+      var err = res.text || "Status code " + res.statusCode;
+      debug(err);
+      callback(err);
+    }
   });
 };
 
