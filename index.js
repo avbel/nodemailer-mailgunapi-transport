@@ -32,23 +32,42 @@ MailgunTransport.prototype.send = function(mail, callback) {
   }
 
   var req = request.post(this.baseUrl + "/messages.mime").auth("api", this.options.apiKey);
-  req.attach("message", mail.message.createReadStream(), {filename: "message.eml"});
   var to = mail.message.getEnvelope().to;
   if(Array.isArray(to)){
     to = to.join(",");
   }
   req.field("to", to);
   req.field("o:testmode", options.testMode?"yes":"no");
-  req.end(function(res){
-    if(res.ok){
-      var id = ((res.body || {}).id || mail.message.getHeader("Message-Id") || "").replace(/[<>\s]/g, "");
-      callback(null, {messageId: id});
-    }
-    else{
-      var err = res.text || "Status code " + res.statusCode;
-      callback(err);
-    }
-  });
+  var completeRequest = function(){
+    req.end(function(res){
+      if(res.ok){
+        var id = ((res.body || {}).id || mail.message.getHeader("Message-Id") || "").replace(/[<>\s]/g, "");
+        callback(null, {messageId: id});
+      }
+      else{
+        var err = res.text || "Status code " + res.statusCode;
+        callback(err);
+      }
+    });
+  };
+  var nodeVersion = process.version.match(/^v(\d+\.\d+)/)[1];
+  if(nodeVersion == "0.10"){
+    //node 0.10
+    var stream = mail.message.createReadStream();
+    var list = [];
+    stream.on("data", function(data){
+      list.push(data);
+    });
+    stream.on("end", function(){
+      req.attach("message", Buffer.concat(list), {filename: "message.eml"});
+      completeRequest();
+    });
+  }
+  else{
+    //node 0.11+
+    req.attach("message", mail.message.createReadStream(), {filename: "message.eml"});
+    completeRequest();
+  }
 };
 
 function pattern2regexp(pattern){

@@ -44,6 +44,10 @@ describe("mailgun transport", function(){
       .matchHeader("Authorization", "Basic " + TOKEN)
       .post("/v2/messages.mime")
       .reply(200, {id: "id"})
+    nock(MAILGUN_API)
+      .filteringRequestBody(function(b){
+        return body = b;
+      })
       .matchHeader("Authorization", "Basic " + TOKEN)
       .post("/v2/test.com/messages.mime")
       .reply(200);
