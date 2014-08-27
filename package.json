@@ -1,6 +1,6 @@
 {
   "name": "nodemailer-mailgunapi-transport",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Mailgun api transport module for Nodemailer",
   "main": "index.js",
   "scripts": {
