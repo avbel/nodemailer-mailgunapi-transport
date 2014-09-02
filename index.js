@@ -26,9 +26,13 @@ MailgunTransport.prototype.send = function(mail, callback) {
       id = id.substr(0, index + 1) +  this.options.domain;
     }
     else{
-      id += "@" + this.options.domain;
+      if(id){
+        id += "@" + this.options.domain;
+      }
     }
-    mail.message.setHeader("Message-Id", "<" + id + ">");
+    if(id){
+      mail.message.setHeader("Message-Id", "<" + id + ">");
+    }
   }
 
   var req = request.post(this.baseUrl + "/messages.mime").auth("api", this.options.apiKey);
@@ -38,7 +42,13 @@ MailgunTransport.prototype.send = function(mail, callback) {
   }
   req.field("to", to);
   req.field("o:testmode", options.testMode?"yes":"no");
-  var completeRequest = function(){
+  var stream = mail.message.createReadStream();
+  var list = [];
+  stream.on("data", function(data){
+    list.push(data);
+  });
+  stream.on("end", function(){
+    req.attach("message", Buffer.concat(list), {filename: "message.eml"});
     req.end(function(res){
       if(res.ok){
         var id = ((res.body || {}).id || mail.message.getHeader("Message-Id") || "").replace(/[<>\s]/g, "");
@@ -49,25 +59,7 @@ MailgunTransport.prototype.send = function(mail, callback) {
         callback(err);
       }
     });
-  };
-  var nodeVersion = process.version.match(/^v(\d+\.\d+)/)[1];
-  if(nodeVersion == "0.10"){
-    //node 0.10
-    var stream = mail.message.createReadStream();
-    var list = [];
-    stream.on("data", function(data){
-      list.push(data);
-    });
-    stream.on("end", function(){
-      req.attach("message", Buffer.concat(list), {filename: "message.eml"});
-      completeRequest();
-    });
-  }
-  else{
-    //node 0.11+
-    req.attach("message", mail.message.createReadStream(), {filename: "message.eml"});
-    completeRequest();
-  }
+  });
 };
 
 function pattern2regexp(pattern){
